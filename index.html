@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.A.J.C.S Premium - V5 (Recherche & Vocal)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        :root { --primary: #1e3a8a; --gold: #d4af37; --bg: #f4f6fb; --card: #ffffff; --text: #1f2937; --sidebar-width: 260px; }
+        body.dark-mode { --bg: #111827; --card: #1f2937; --text: #f3f4f6; --primary: #3b82f6; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+        body { background:var(--bg); color:var(--text); transition: 0.3s; overflow-x: hidden; }
+
+        /* --- AUTH --- */
+        #authScreen { position: fixed; inset: 0; background: var(--primary); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .auth-container { background: white; color: #333; padding: 40px; border-radius: 25px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.3); }
+        .auth-choice { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; }
+        .btn-choice { padding: 15px; border-radius: 12px; border: 2px solid var(--primary); cursor: pointer; font-weight: 700; transition: 0.3s; background: none; color: var(--primary); }
+        .btn-choice:hover { background: var(--primary); color: white; }
+        #loginForm { display: none; margin-top: 20px; }
+
+        /* --- LAYOUT --- */
+        #appLayout { display: none; min-height: 100vh; flex-direction: row; }
+        .sidebar { width: var(--sidebar-width); background: var(--primary); color: white; display: flex; flex-direction: column; padding: 20px; position: fixed; height: 100vh; left: 0; top: 0; z-index: 1000; transition: 0.3s ease; }
+        .main-content { margin-left: var(--sidebar-width); flex: 1; padding: 30px; }
+        .menu-toggle { display: none; position: fixed; top: 15px; left: 15px; z-index: 2000; background: var(--primary); color: white; padding: 10px; border-radius: 8px; border: none; }
+
+        /* --- SEARCH BAR --- */
+        .search-container { margin-bottom: 20px; position: relative; }
+        .search-container i { position: absolute; left: 15px; top: 15px; color: #888; }
+        .search-input { width: 100%; padding: 12px 12px 12px 45px; border-radius: 15px; border: 2px solid transparent; background: var(--card); color: var(--text); box-shadow: 0 4px 10px rgba(0,0,0,0.05); outline: none; transition: 0.3s; }
+        .search-input:focus { border-color: var(--gold); }
+
+        section { display: none; animation: fadeIn 0.4s; }
+        section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- CARDS & UI --- */
+        .card { background: var(--card); padding: 25px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid rgba(0,0,0,0.05); }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #ddd; background: var(--card); color: var(--text); }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        button { padding: 10px 18px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-admin { background: var(--gold); color: #fff; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-vocal { background: #8b5cf6; color: white; }
+
+        .view-badge { font-size: 11px; background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 10px; margin-top: 5px; display: inline-block; }
+        #vocalStatus { font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+
+        /* --- MEDIA PLAYERS --- */
+        #musicPlayer, #videoPlayer { display: none; margin-bottom: 20px; overflow: hidden; border: 2px solid var(--gold); border-radius: 20px; }
+
+        @media (max-width: 768px) {
+            .sidebar { left: -100%; }
+            .sidebar.active { left: 0; }
+            .main-content { margin-left: 0; padding: 20px; margin-top: 50px; }
+            .menu-toggle { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="authScreen">
+        <div class="auth-container">
+            <h1 style="color:var(--primary); font-weight:800;">C.A.J.C.S</h1>
+            <p>Plateforme Spirituelle V5</p>
+            <div id="choiceBox" class="auth-choice">
+                <button class="btn-choice" onclick="enterApp('user')"><i class="fas fa-user"></i> ACCÈS FIDÈLE</button>
+                <button class="btn-choice" onclick="showLogin()"><i class="fas fa-user-shield"></i> ADMINISTRATION</button>
+            </div>
+            <div id="loginForm">
+                <input type="password" id="adminCode" placeholder="Code secret">
+                <button class="btn-primary" style="width:100%; justify-content:center;" onclick="enterApp('admin')">Connexion</button>
+                <button style="background:none; color:#777; margin-top:10px;" onclick="cancelLogin()">Retour</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="appLayout">
+        <button class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></button>
+        
+        <div class="sidebar" id="sidebar">
+            <h2 id="roleLabel" style="color:var(--gold); font-size:16px; margin-bottom:30px; text-align:center;">ESPACE FIDÈLE</h2>
+            <div onclick="navigate('accueil')" style="cursor:pointer; padding:12px;"><i class="fas fa-home"></i> Accueil</div>
+            <div onclick="navigate('bible')" style="cursor:pointer; padding:12px;"><i class="fas fa-book"></i> Bible</div>
+            <div onclick="navigate('musique')" style="cursor:pointer; padding:12px;"><i class="fas fa-music"></i> Musique</div>
+            <div onclick="navigate('enseignements')" style="cursor:pointer; padding:12px;"><i class="fas fa-chalkboard-teacher"></i> Enseignements</div>
+            <div onclick="navigate('prieres')" style="cursor:pointer; padding:12px;"><i class="fas fa-pray"></i> Mes Prières</div>
+            
+            <div style="margin-top:auto;">
+                <div onclick="toggleDarkMode()" style="cursor:pointer; padding:12px;"><i class="fas fa-moon"></i> Mode Nuit</div>
+                <div onclick="logout()" style="cursor:pointer; padding:12px; color:#ff7a7a;"><i class="fas fa-sign-out-alt"></i> Déconnexion</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="globalSearch" placeholder="Rechercher un verset, un chant ou un enseignement..." onkeyup="renderAll()">
+            </div>
+
+            <section id="accueil" class="active">
+                <div class="card">
+                    <h1 id="welcomeTitle">Que la Paix soit avec vous !</h1>
+                    <p>Bienvenue sur votre plateforme mise à jour.</p>
+                </div>
+            </section>
+
+            <section id="bible">
+                <div class="card admin-area" style="display:none;">
+                    <h3><i class="fas fa-plus-circle"></i> Ajouter un Verset</h3>
+                    <input type="text" id="vRef" placeholder="Référence">
+                    <textarea id="vText" placeholder="Texte du verset..."></textarea>
+                    <button class="btn-admin" onclick="addContent('bible')">Publier</button>
+                </div>
+                <div class="card"><h4>Textes Bibliques</h4><ul id="listBible"></ul></div>
+            </section>
+
+            <section id="musique">
+                <div class="card admin-area" style="display:none;">
+                    <h3><i class="fas fa-plus-circle"></i> Ajouter un Chant</h3>
+                    <input type="text" id="mTitle" placeholder="Titre du chant">
+                    <input type="text" id="mUrl" placeholder="Lien YouTube ou MP3">
+                    <button class="btn-admin" onclick="addContent('musique')">Publier</button>
+                </div>
+                <div id="musicPlayer" class="card" style="background:#1a1a1a; color:white; padding:10px;">
+                    <div id="ytMusicMedia"></div>
+                    <audio id="audMedia" controls style="width:100%; margin-top:10px;"></audio>
+                </div>
+                <div class="card"><h4>Louange & Adoration</h4><ul id="listMusique"></ul></div>
+            </section>
+
+            <section id="enseignements">
+                <div class="card admin-area" style="display:none;">
+                    <h3><i class="fas fa-plus-circle"></i> Nouveau Cours</h3>
+                    <input type="text" id="eTitle" placeholder="Titre de l'enseignement">
+                    <textarea id="eDesc" placeholder="Lien YouTube"></textarea>
+                    <button class="btn-admin" onclick="addContent('enseignements')">Mettre en ligne</button>
+                </div>
+
+                <div class="card" style="border: 2px dashed #8b5cf6;">
+                    <h3><i class="fas fa-microphone"></i> Mes Notes Vocales</h3>
+                    <p style="font-size:12px; margin-bottom:10px;">Enregistrez vos réflexions sur l'enseignement en cours.</p>
+                    <div id="vocalStatus">Prêt à enregistrer</div>
+                    <div class="btn-group">
+                        <button id="startRec" class="btn-vocal" onclick="startRecording()"><i class="fas fa-circle"></i> Enregistrer</button>
+                        <button id="stopRec" class="btn-danger" onclick="stopRecording()" style="display:none;"><i class="fas fa-stop"></i> Arrêter</button>
+                    </div>
+                    <ul id="vocalList" style="margin-top:15px;"></ul>
+                </div>
+
+                <div id="videoPlayer" class="card" style="padding:0; background:black;">
+                    <div id="ytVideoMedia"></div>
+                </div>
+                <div class="card"><h4>Études Bibliques</h4><ul id="listEnseignements"></ul></div>
+            </section>
+
+            <section id="prieres">
+                <div class="card">
+                    <h3>🙏 Journal Privé</h3>
+                    <textarea id="pText" placeholder="Écrire ma requête..."></textarea>
+                    <button class="btn-primary" onclick="addContent('prieres')">Enregistrer</button>
+                </div>
+                <div class="card"><h4>Historique</h4><ul id="listPrieres"></ul></div>
+            </section>
+
+        </div>
+    </div>
+
+<script>
+    let role = 'user';
+    let currentPlayingUrl = "";
+    let mediaRecorder;
+    let audioChunks = [];
+    let data = JSON.parse(localStorage.getItem('cajcs_v5_data')) || { bible: [], musique: [], enseignements: [], prieres: [], vocaux: [] };
+
+    // --- NAVIGATION & AUTH ---
+    function showLogin() { document.getElementById('choiceBox').style.display = 'none'; document.getElementById('loginForm').style.display = 'block'; }
+    function cancelLogin() { document.getElementById('choiceBox').style.display = 'flex'; document.getElementById('loginForm').style.display = 'none'; }
+    function enterApp(selectedRole) {
+        if(selectedRole === 'admin') {
+            const code = document.getElementById('adminCode').value;
+            if(code !== "1234") return alert("Erreur !");
+            role = 'admin';
+        }
+        document.getElementById('authScreen').style.display = 'none';
+        document.getElementById('appLayout').style.display = 'flex';
+        setupRoleUI();
+        renderAll();
+    }
+    function logout() { location.reload(); }
+    function setupRoleUI() {
+        document.getElementById('roleLabel').innerText = (role === 'admin') ? "ADMINISTRATION" : "ESPACE FIDÈLE";
+        document.querySelectorAll('.admin-area').forEach(el => el.style.display = (role === 'admin') ? "block" : "none");
+    }
+    function navigate(id) {
+        document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(window.innerWidth <= 768) toggleMenu();
+    }
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
+    function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+
+    // --- ENREGISTREUR VOCAL ---
+    async function startRecording() {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.start();
+        audioChunks = [];
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+                data.vocaux.push({ date: new Date().toLocaleString(), audio: reader.result });
+                saveData(); renderVocals();
+            };
+        };
+        document.getElementById('startRec').style.display = 'none';
+        document.getElementById('stopRec').style.display = 'flex';
+        document.getElementById('vocalStatus').innerText = "🔴 Enregistrement en cours...";
+    }
+
+    function stopRecording() {
+        mediaRecorder.stop();
+        document.getElementById('startRec').style.display = 'flex';
+        document.getElementById('stopRec').style.display = 'none';
+        document.getElementById('vocalStatus').innerText = "✅ Enregistré !";
+    }
+
+    function renderVocals() {
+        const list = document.getElementById('vocalList');
+        list.innerHTML = "";
+        data.vocaux.forEach((v, i) => {
+            const li = document.createElement('li');
+            li.className = "card"; li.style.padding = "10px";
+            li.innerHTML = `<small>${v.date}</small><audio controls src="${v.audio}" style="width:100%; margin-top:5px;"></audio>
+                            <button class="btn-danger" style="margin-top:5px; padding:5px;" onclick="deleteVocal(${i})"><i class="fas fa-trash"></i></button>`;
+            list.appendChild(li);
+        });
+    }
+
+    function deleteVocal(i) { data.vocaux.splice(i, 1); saveData(); renderVocals(); }
+
+    // --- MÉDIAS & PDF ---
+    function stopMedia(type) {
+        if(type === 'musique') {
+            document.getElementById('audMedia').pause();
+            document.getElementById('ytMusicMedia').innerHTML = "";
+            document.getElementById('musicPlayer').style.display = "none";
+            currentPlayingUrl = "";
+        } else {
+            document.getElementById('ytVideoMedia').innerHTML = "";
+            document.getElementById('videoPlayer').style.display = "none";
+        }
+        renderAll();
+    }
+
+    function playMedia(url, type, index) {
+        if(type === 'musique' && currentPlayingUrl === url) { stopMedia('musique'); return; }
+        
+        if(!data[type][index].vues) data[type][index].vues = 0;
+        data[type][index].vues++;
+        saveData();
+
+        let videoId = "";
+        const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if(match) videoId = match[1];
+
+        if(type === 'musique') {
+            stopMedia('musique'); currentPlayingUrl = url;
+            document.getElementById('musicPlayer').style.display = "block";
+            if(videoId) document.getElementById('ytMusicMedia').innerHTML = `<iframe width="100%" height="200" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0"></iframe>`;
+            else { const aud = document.getElementById('audMedia'); aud.src = url; aud.play(); }
+        } else {
+            stopMedia('enseignements');
+            if(videoId) {
+                document.getElementById('videoPlayer').style.display = "block";
+                document.getElementById('ytVideoMedia').innerHTML = `<iframe width="100%" height="350" src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allowfullscreen></iframe>`;
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }
+        }
+        renderAll();
+    }
+
+    function downloadPDF(titre, lien) {
+        const contenu = `C.A.J.C.S\nEnseignement: ${titre}\nDate: ${new Date().toLocaleDateString()}\nLien: ${lien}\n\nNotes:...`;
+        const blob = new Blob([contenu], {type: 'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${titre}.txt`;
+        a.click();
+    }
+
+    // --- CORE DATA ---
+    function addContent(type) {
+        let v1 = "", v2 = "";
+        if(type === 'bible') { v1 = document.getElementById('vRef').value; v2 = document.getElementById('vText').value; }
+        if(type === 'musique') { v1 = document.getElementById('mTitle').value; v2 = document.getElementById('mUrl').value; }
+        if(type === 'enseignements') { v1 = document.getElementById('eTitle').value; v2 = document.getElementById('eDesc').value; }
+        if(type === 'prieres') { v1 = "Ma Prière"; v2 = document.getElementById('pText').value; }
+
+        if(!v2) return alert("Champs vides !");
+        data[type].push({ t: v1, c: v2, vues: 0 });
+        saveData(); renderAll();
+        document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+    }
+
+    function deleteItem(type, index) { if(confirm("Supprimer ?")) { data[type].splice(index, 1); saveData(); renderAll(); } }
+    function saveData() { localStorage.setItem('cajcs_v5_data', JSON.stringify(data)); }
+
+    function renderAll() {
+        const term = document.getElementById('globalSearch').value.toLowerCase();
+        renderVocals();
+        
+        ['bible', 'musique', 'enseignements', 'prieres'].forEach(type => {
+            const ul = document.getElementById('list' + type.charAt(0).toUpperCase() + type.slice(1));
+            if(!ul) return;
+            ul.innerHTML = "";
+            
+            data[type].forEach((item, i) => {
+                if(item.t.toLowerCase().includes(term) || item.c.toLowerCase().includes(term)) {
+                    const li = document.createElement('li');
+                    li.className = "card";
+                    li.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:15px; margin-bottom:10px;";
+
+                    let btns = `<div class="btn-group">`;
+                    if(type === 'musique') {
+                        const isP = (currentPlayingUrl === item.c);
+                        btns += `<button class="${isP?'btn-danger':'btn-primary'}" onclick="playMedia('${item.c}','musique',${i})"><i class="fas ${isP?'fa-stop':'fa-play'}"></i></button>`;
+                    }
+                    if(type === 'enseignements') {
+                        btns += `<button class="btn-primary" onclick="playMedia('${item.c}','enseignements',${i})"><i class="fas fa-video"></i></button>`;
+                        btns += `<button class="btn-success" onclick="downloadPDF('${item.t}','${item.c}')"><i class="fas fa-file-download"></i></button>`;
+                    }
+                    if(role === 'admin' || type === 'prieres') btns += `<button class="btn-danger" onclick="deleteItem('${type}',${i})"><i class="fas fa-trash"></i></button>`;
+                    btns += `</div>`;
+
+                    li.innerHTML = `<div><strong>${item.t}</strong><br><small style="opacity:0.7">${item.c.substring(0,35)}...</small><br>
+                                    <span class="view-badge"><i class="fas fa-eye"></i> ${item.vues||0}</sp
